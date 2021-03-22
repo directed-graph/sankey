@@ -63,6 +63,12 @@ function drawChart(data) {
 }
 
 $(document).ready(function() {
+  if (typeof(Storage) !== 'undefined') {
+      $('#sankey-data').val(localStorage.getItem('sankey-data'));
+      $('#save-btn').bind('click', () =>
+          localStorage.setItem('sankey-data',
+                               $('#sankey-data').val()));
+  }
   $('#generate-btn').on('click', function() {
     drawChart($('#sankey-data').val());
   });
