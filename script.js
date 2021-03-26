@@ -1,10 +1,6 @@
 google.charts.load('current', {'packages':['sankey']});
 
-// TODO: make configurable
-const LEVELS = 3;
-const DELIMITER = ":";
-
-function drawChart(data) {
+function drawChart(data, delimiter=':', unshiftTime=true, levels=2) {
   // The counts hold the number of occurrances for each item; an item may
   // be a point (i.e. (a, b)) represented as a string or a value of a
   // point (i.e. a). We cannot infer the count of all values (e.g. b)
@@ -19,20 +15,25 @@ function drawChart(data) {
   let counts = {};
   let points = [];
   let pointsAsStrings = new Set();
+  if (unshiftTime) {
+    levels += 1;
+  }
 
-  data.split("\n").forEach(
+  data.split('\n').forEach(
     function(line) {
-      line = line.split(DELIMITER);
-      line.unshift("time");
-      while (line.length > LEVELS) {
+      line = line.split(delimiter);
+      if (unshiftTime) {
+        line.unshift('time');
+      }
+      while (line.length > levels) {
         line.pop();
       }
-      while (line.length < LEVELS) {
-          line.push(line[line.length - 1] + "*");
+      while (line.length < levels) {
+        line.push(line[line.length - 1] + '*');
       }
       for(let i = 0; i < line.length - 1; ++i) {
         let point = [line[i].trim(), line[i + 1].trim()];
-        if (point.some((p) => p == "")) {
+        if (point.some((p) => p == '')) {
           console.warn('Encountered empty point value', {line, point});
           continue;
         }
@@ -52,6 +53,8 @@ function drawChart(data) {
     data_points.push([...point, counts[String(point)]]);
   });
 
+  console.log('Processed data', {pointsAsStrings, points, counts, data_points});
+
   var data = new google.visualization.DataTable();
   data.addColumn('string', 'From');
   data.addColumn('string', 'To');
@@ -64,12 +67,20 @@ function drawChart(data) {
 
 $(document).ready(function() {
   if (typeof(Storage) !== 'undefined') {
-      $('#sankey-data').val(localStorage.getItem('sankey-data'));
-      $('#save-btn').bind('click', () =>
-          localStorage.setItem('sankey-data',
-                               $('#sankey-data').val()));
+    $('#sankey-data').val(localStorage.getItem('sankey-data') || '');
+    $('#levels').val(localStorage.getItem('levels') || 2);
+    $('#unshiftTime').prop('checked',
+                           localStorage.getItem('unshiftTime') || false);
+
+    $('#save-btn').bind('click', function() {
+      localStorage.setItem('sankey-data', $('#sankey-data').val());
+      localStorage.setItem('levels', $('#levels').val());
+      localStorage.setItem('unshiftTime', $('#unshiftTime').is(':checked'));
+    });
   }
   $('#generate-btn').on('click', function() {
-    drawChart($('#sankey-data').val());
+    drawChart($('#sankey-data').val(), delimiter=':',
+              unshiftTime=$('#unshiftTime').is(':checked') || false,
+              levels=Number.parseInt($('#levels').val()) || 2);
   });
 });
